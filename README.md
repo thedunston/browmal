@@ -59,7 +59,7 @@ etc.
 
 ## Scanned with SemGrep - https://semgrep.dev
 
-The findings were expected because of how MD5 and SHA1 is used to parse the headers.
+The findings were expected because of how MD5 and SHA1 are used to parse the headers.
 ```
 main.go
     ❯❱ go.lang.security.audit.crypto.use_of_weak_crypto.use-of-md5
