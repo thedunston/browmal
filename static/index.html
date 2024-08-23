@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PE File Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #282c34;
+            color: #61dafb;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            color: #61dafb;
+        }
+        #fileInputContainer {
+            margin-top: 20px;
+            position: relative;
+        }
+        #fileInput {
+            opacity: 0;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        #uploadLabel {
+            display: inline-block;
+            background-color: #61dafb;
+            color: #282c34;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            border: none;
+        }
+        #uploadLabel:hover {
+            background-color: #5bc0de;
+        }
+        #submitBtn, #testNewFileBtn {
+            background-color: #61dafb;
+            color: #282c34;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        #submitBtn:hover, #testNewFileBtn:hover {
+            background-color: #5bc0de;
+        }
+        #fileOutput {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            background-color: #20232a;
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 80%;
+            max-height: 300px;
+            overflow-y: auto;
+            color: #9cdcfe;
+            width: 100%;
+        }
+        .suspicious {
+            color: red;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .tooltip {
+            display: none;
+            position: absolute;
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+        .tooltip p {
+            margin: 0;
+        }
+        .tooltip button {
+            margin-top: 10px;
+            background-color: #444;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        #loadingMessage {
+            display: none;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>PE File Analyzer</h1>
+    <div id="fileInputContainer">
+        <label id="uploadLabel" for="fileInput">Choose File</label>
+        <input type="file" id="fileInput">
+    </div>
+    <button id="submitBtn">Submit</button>
+    <p id="loadingMessage">Please wait...</p>
+    <output id="fileOutput"></output>
+
+    <div class="tooltip" id="tooltip">
+        <p id="tooltipContent"></p>
+        <button id="closeTooltip">Close</button>
+    </div>
+
+    <script src="/wasm_exec.js"></script>
+    <script>
+        const go = new Go();
+        let fileData = null;
+        let wasmInitialized = false;
+        let maliciousCalls = {};
+
+        // Load and instantiate WebAssembly
+        WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(result => {
+            go.run(result.instance);
+            wasmInitialized = true;  // WebAssembly is now ready
+            console.log("WebAssembly successfully initialized.");
+        }).catch(err => {
+            console.error("Error initializing WebAssembly:", err);
+        });
+
+        // Load malicious calls from the JSON file
+        function loadMaliciousCalls() {
+            const url = `malicious_calls.json?timestamp=${new Date().getTime()}`;
+            console.log("Fetching malicious calls from:", url);
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    maliciousCalls = data;
+                    console.log("Loaded malicious calls:", maliciousCalls);
+                })
+                .catch(err => {
+                    console.error("Failed to load malicious calls:", err);
+                });
+        }
+
+        // Function to check for malicious symbols in the output
+        function checkForMaliciousSymbols(output) {
+            let result = "";
+            const lines = output.split("\n");
+
+            lines.forEach((line, index) => {
+                let trimmedLine = line.trim();
+                if (trimmedLine && trimmedLine.includes("DLL:")) {
+                    result += line + "\n";  // Keep the DLL lines as is
+                } else if (trimmedLine) {
+                    let lowerTrimmedLine = trimmedLine.toLowerCase();  // Convert to lowercase
+                    let found = false;
+
+                    // Perform case-insensitive partial matching with the JSON keys
+                    for (let call in maliciousCalls) {
+                        if (lowerTrimmedLine.includes(call.toLowerCase())) {  // Partial match check
+                            let explanation = maliciousCalls[call];
+                            console.log(`Match found for: ${call}, Explanation: ${explanation}`);  // Debugging output
+                            result += `    <span class="suspicious" data-index="${index}" data-explanation="${explanation}">${trimmedLine} => Suspicious</span>\n`;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        result += `    ${trimmedLine}\n`;
+                    }
+                }
+            });
+
+            console.log("Final result with checks:", result);
+            return result;
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    fileData = new Uint8Array(event.target.result);
+                    console.log("File data loaded.");
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        document.getElementById('submitBtn').addEventListener('click', function() {
+            if (fileData) {
+                loadMaliciousCalls();  // Load the malicious calls before submitting
+
+                if (!wasmInitialized) {
+                    console.error("WebAssembly is not yet initialized.");
+                    return;
+                }
+
+                // Show the "Please wait..." message
+                document.getElementById('loadingMessage').style.display = 'block';
+                document.getElementById('submitBtn').style.display = 'none';
+
+                setTimeout(function() {  // Simulate some delay
+                    const verbose = false;  // Set verbose to false as per new request
+                    let output = window.analyzePE(fileData, verbose);
+                    console.log("Initial output:", output);
+                    output = checkForMaliciousSymbols(output);  // Perform the lookup here
+
+                    const fileOutput = document.getElementById('fileOutput');
+                    fileOutput.innerHTML = output;  // Set innerHTML to include the span elements
+
+                    // Auto-scroll to the bottom of the output
+                    fileOutput.scrollTop = fileOutput.scrollHeight;
+
+                    // Hide the loading message and show results
+                    document.getElementById('loadingMessage').style.display = 'none';
+
+                    // Re-bind event listeners to suspicious labels
+                    document.querySelectorAll('.suspicious').forEach(item => {
+                        item.addEventListener('click', function() {
+                            const explanation = this.getAttribute('data-explanation');
+                            showTooltip(explanation);
+                        });
+                    });
+
+                    // Show "Test New File" button
+                    let testNewFileBtn = document.createElement('button');
+                    testNewFileBtn.id = "testNewFileBtn";
+                    testNewFileBtn.innerText = "Test New File";
+                    testNewFileBtn.addEventListener('click', function() {
+                        location.reload();  // Refresh the page to test a new file
+                    });
+                    document.body.appendChild(testNewFileBtn);
+                }, 1000);  // Simulate 1-second delay to show "Please wait..." message
+            } else {
+                document.getElementById('fileOutput').innerText = "Please upload a file before submitting.";
+            }
+        });
+
+        // Show tooltip with explanation
+        function showTooltip(content) {
+            const tooltip = document.getElementById('tooltip');
+            document.getElementById('tooltipContent').innerText = content;
+            tooltip.style.display = 'block';
+        }
+
+        // Close tooltip
+        document.getElementById('closeTooltip').addEventListener('click', function() {
+            document.getElementById('tooltip').style.display = 'none';
+        });
+
+        // Load malicious calls on page load
+        loadMaliciousCalls();
+    </script>
+</body>
+</html>
+
