@@ -30,10 +30,10 @@ You can run the binary as is and it will listen on `http://127.0.0.1:8111` by de
 NOTE: The provided web server doesn't use SSL.
 
 ## Compile from source
-To compile the `main.go` file from source run:
+To compile the `main.go` file from source run (`-s -w` removes symbols and debug and makes the binary smaller):
 
 ```
-GOOS=js GOARCH=wasm go build -o main.wasm
+OOS=js GOARCH=wasm go build -ldflags "-s -w"  -o main.wasm 
 ```
 
 If you change the name of `main.wasm` then update it in the `index.html` file at:
@@ -54,3 +54,33 @@ If you need to compile for another architecture then use:
 GOOS=windows go build webserver.go
 ```
 etc.
+
+## Scanned with SemGrep - https://semgrep.dev
+
+The findings were expected because of how MD5 and SHA1 is used to parse the headers.
+```
+main.go
+    ❯❱ go.lang.security.audit.crypto.use_of_weak_crypto.use-of-md5
+          Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is
+          therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.               
+          Details: https://sg.run/2xB5                                                                   
+                                                                                                         
+           52┆ md5_h := md5.Sum(fileBytes)
+   
+    ❯❱ go.lang.security.audit.crypto.use_of_weak_crypto.use-of-sha1
+          Detected SHA1 hash algorithm which is considered insecure. SHA1 is not collision resistant and is
+          therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.                 
+          Details: https://sg.run/XBYA                                                                     
+                                                                                                           
+           53┆ sha1_h := sha1.Sum(fileBytes)
+                                   
+    websrv/websrv.go
+    ❯❱ go.lang.security.audit.net.use-tls.use-tls
+          Found an HTTP server without TLS. Use 'http.ListenAndServeTLS' instead. See
+          https://golang.org/pkg/net/http/#ListenAndServeTLS for more information.   
+          Details: https://sg.run/dKbY                                               
+                                                                                     
+           ▶▶┆ Autofix ▶ http.ListenAndServeTLS(addr, certFile, keyFile, nil)
+           56┆ log.Fatal(http.ListenAndServe(addr, nil))
+
+```
