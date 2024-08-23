@@ -1,4 +1,4 @@
-/** Simple web server to run malwasm. */
+/** Simple web server to run browmal. */
 package main
 
 import (

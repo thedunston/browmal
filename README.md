@@ -1,6 +1,6 @@
-# malwasm
+# browmal
 
-`malwasm` is a program that allows parsing a PE file using your web browser. The file and resulting data stays within your browser. It was inspired by the OMAT tool created by https://anticrypt.de.
+`browmal` is a program that allows parsing a PE file using your web browser. The file and resulting data stays within your browser. It was inspired by the OMAT tool created by https://anticrypt.de.
 
 It is a proof-of-concept for tinkering with learning how to parse PE files with Go and used the tutorial from https://d3ext.github.io/posts/malware-analysis-1/ to learn to create a parser with Go.
 
