@@ -13,6 +13,8 @@ The `malicious_calls.json` file contains known function calls used by malware. T
 ```
 If the function call is found, it will be highlighted and you can click on it and get the `Details about the function`.
 
+Initial json from: https://gist.github.com/404NetworkError/a81591849f5b6b5fe09f517efc189c1d and https://sensei-infosec.netlify.app/forensics/windows/api-calls/2020/04/29/win-api-calls-1.html.
+
 Lots more work to do such as prettier formatting. I'm not good at that so I used ChatGPT to create that Javascript and HTML/CSS front end functionality.  I don't do a lot of front-end work.
 
 ## Setup
