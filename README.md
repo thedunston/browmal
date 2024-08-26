@@ -49,7 +49,7 @@ Lots more work to do such as prettier formatting. I'm not good at that so I used
 ![Shows an ELF file scan report.](/assets/elf.png?raw=true "Shows an ELF file scan report.")
 
 
-![Shows Toggle on with symbols on the left and the description of it on the right..](/assets/elf.png?raw=true "Shows a Toggle on with symbols on the left and the description of it on the right.")
+![Shows Toggle on with symbols on the left and the description of it on the right..](/assets/symbols.png?raw=true "Shows a Toggle on with symbols on the left and the description of it on the right.")
 
 ## Setup
 
