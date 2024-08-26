@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PE File Analysis Report</title>
+    <style>
+        body {
+            font-family: 'Georgia', serif;
+            background-color: #f8f8f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .report-container {
+            background-color: #fff;
+            padding: 40px;
+            max-width: 900px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+        h1 {
+            font-size: 28px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .report-metadata {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .report-metadata span {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .report-section {
+            margin-bottom: 30px;
+        }
+        .header {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+        .subheader {
+            font-size: 16px;
+            color: #34495e;
+            margin-bottom: 5px;
+        }
+        .info {
+            font-size: 14px;
+            color: #7f8c8d;
+            line-height: 1.6;
+        }
+        .suspicious {
+            background-color: #f0f0f0;
+            color: #000;
+            font-weight: bold;
+            padding: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 2px 0;
+            transition: background-color 0.3s ease;
+        }
+        .suspicious:hover {
+            background-color: #e0e0e0;
+        }
+
+        #loadingMessage {
+            font-size: 18px;
+            margin-top: 20px;
+            color: #e67e22;
+        }
+        footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+        }
+        #fileInputContainer {
+            margin-top: 20px;
+            position: relative;
+        }
+        #fileInput {
+            display: none;
+        }
+        #uploadLabel {
+            display: inline-block;
+            background-color: #61dafb;
+            color: #282c34;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            border: none;
+        }
+        #submitBtn {
+            background-color: #61dafb;
+            color: #282c34;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        #submitBtn:hover {
+            background-color: #5bc0de;
+        }
+    
+        /* Shared styling for tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+    
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+    
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+    
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    
+        /* Toggle Button Styling */
+        #toggleButton, .toggleButton {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+    
+        #toggleButton:hover, .toggleButton:hover {
+            background-color: #2980b9;
+        }
+        #testAnotherBtn {
+        background-color: #e74c3c; /* Red color */
+        color: white;
+        padding: 10px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-top: 20px;
+    }
+
+    #testAnotherBtn:hover {
+        background-color: #c0392b; /* Darker red on hover */
+    }
+    .ref-table {
+        width: 80%;
+        border-collapse: collapse;
+        background-color: #fff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+     }
+
+        .ref-table th, .ref-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .ref-table th {
+            background-color: #3498db;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .ref-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .ref-table tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .ref-table a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .ref-table a:hover {
+            text-decoration: underline;
+        }
+
+        .ref-table td {
+            vertical-align: top;
+        }
+    </style>
+    
+</head>
+<body>
+    <div class="report-container">
+        <h1>PE File Analysis Report</h1>
+        <div class="report-metadata">
+            <span>File Name: <strong id="fileName">N/A</strong></span>
+            <span>File Size: <strong id="fileSize">N/A</strong></span>
+            <span>Date Submitted: <strong id="submissionDate">N/A</strong></span>
+        </div>
+
+        <div id="fileOutput" class="report-section"></div>
+
+        <div id="fileInputContainer">
+            <label id="uploadLabel" for="fileInput">Choose File...</label>
+            <input type="file" id="fileInput">
+        </div>
+
+        <button id="submitBtn">Submit</button>
+        <button id="testAnotherBtn" style="display: none;">Test Another File</button>
+<br />
+<br />
+<br />
+<br />
+    <h3>References</h3>
+</p>
+        <p id="loadingMessage" style="display: none;">Please wait...</p>
+        <table class="ref-table">
+            <thead>
+                <tr>
+                    <th>Link</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="https://www.first.org/resources/papers/conf2022/01-ELFMalware-MechtingerandFishbein.pdf" target="_blank">ELF Malware Analysis 101 - Nicole Fishbein & Avigayil Mechtinger</a></td>
+                    <td>ELF Analysis workshop [PDF]</td>
+                </tr>
+                <tr>
+                    <td><a href="https://github.com/intezer/ELF-Malware-Analysis-101" target="_blank">ELF Malware Analysis 101 GitHub</a></td>
+                    <td>GitHub Repo containing the files from the workshop.</td>
+                </tr>
+                <tr>
+                    <td><a href="https://intezer.com/blog/malware-analysis/elf-malware-analysis-101-linux-threats-no-longer-an-afterthought/" target="_blank">Elf Malware Analysis 101 Linux Series</a></td>
+                    <td>Discussion on analyzing ELF files and contains links to a series on the ELF file format.</td>
+                </tr>
+                <tr>
+                    <td><a href="https://www.youtube.com/watch?v=gixZYmN7BYY" target="_blank">Intro To PE File Format</a></td>
+                    <td>Ali Hadi (@binaryzone) discussing the PE File.</td>
+                </tr>
+                <tr>
+                    <td><a href="https://www.youtube.com/playlist?list=PLCS2zI95IiNwQ7GfjQB7IpnvbDkhkNsSF" target="_blank">Malware Analysis</a></td>
+                    <td>Ali Hadi (@binaryzone) series of videos on malware analysis.</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+
+    <script src="wasm_exec.js"></script>
+    
+      <script>
+        
+	const go = new Go();
+        let fileData = null;
+        let wasmInitialized = false;
+        let maliciousCalls = {};
+        let winapiCalls = {};
+let linuxSyscalls = {};
+
+// Function is used to lookup calls APIs known to be used by malware.
+function loadMaliciousCalls() {
+
+    // Load windows api and Linux Syscalls.
+    const winapiUrl = `winapi.json?timestamp=${new Date().getTime()}`;
+    const linuxSyscallUrl = `linuxsyscall.json?timestamp=${new Date().getTime()}`;
+
+    // Load Windows API Calls.
+    fetch(winapiUrl)
+
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Failed to load winapi.json: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            winapiCalls = data;
+            console.log("Windows API calls loaded successfully.");
+        })
+        .catch(err => {
+            console.error("Failed to load winapi.json:", err);
+        });
+
+    // Load Linux Syscalls
+    fetch(linuxSyscallUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Failed to load linuxsyscall.json: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            linuxSyscalls = data;
+            console.log("Linux syscalls loaded successfully.");
+        })
+        .catch(err => {
+            console.error("Failed to load linuxsyscall.json:", err);
+        });
+}
+
+    
+        // Load the wasm file. ********Change this if you compile and rename it.********
+        WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(result => {
+        
+	    go.run(result.instance);
+            wasmInitialized = true;
+        
+	}).catch(err => {
+        
+	    console.error("Error initializing WebAssembly:", err);
+        	
+	});
+    
+        // Display the file size.
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+    
+    
+    
+        // Function to format the results and check for malicious symbols in the output.
+        // Reads the key/value from the json file.
+        function normalizeSymbol(symbol) {
+    // Normalize by converting to lowercase and removing common suffixes like 'A' and 'W'
+    return symbol.replace(/[a|w]$/i, '').toLowerCase();
+}
+
+function checkForMaliciousSymbols(output) {
+
+    let result = "";
+    const lines = output.split("\n");
+    let insideSymbolsSection = false;
+    let isELF = false;
+    let isPE = false;
+    let tableRows = [];
+
+    console.log("Starting to check for malicious symbols...");
+
+    lines.forEach((line, index) => {
+        let trimmedLine = line.trim();
+
+        // Detect ELF or PE file formats.
+        if (trimmedLine.startsWith('[+] ELF Detected')) {
+            isELF = true;
+            isPE = false;
+            result += `<div class="header">${trimmedLine}</div>\n`;
+            console.log("ELF Detected");
+        } else if (trimmedLine.startsWith('[+] PE Detected')) {
+            isPE = true;
+            isELF = false;
+            //result += `<div class="header">${trimmedLine}</div>\n`;
+            console.log("PE Detected");
+        }
+
+        // Detect the Symbols section.
+        if (trimmedLine.startsWith('[+] Symbols')) {
+            insideSymbolsSection = true;
+            //result += `<div class="header">${trimmedLine}</div>\n`;
+            console.log("Symbols section detected.");
+            return;
+        }
+
+        // Exit the Symbols section when encountering the next header.
+        if (trimmedLine.startsWith('[+]') && insideSymbolsSection) {
+            insideSymbolsSection = false;
+            console.log("Exiting Symbols section.");
+        }
+
+        // Normal processing if not inside the Symbols section.
+        if (!insideSymbolsSection) {
+            if (trimmedLine.startsWith('[+]')) {
+                result += `<div class="header">${trimmedLine}</div>\n`;
+            } else if (trimmedLine.startsWith('[*]')) {
+                result += `<div class="subheader">${trimmedLine}</div>\n`;
+            } else if (trimmedLine && trimmedLine.includes("DLL:")) {
+                result += `<div class="subheader">${trimmedLine}</div>\n`;
+            } else if (trimmedLine) {
+                result += `<div class="info">${trimmedLine}</div>\n`;
+            }
+            return;
+        }
+
+        // If inside the Symbols section, extract symbol names and add them to the table displayed
+        // at the end of the page.
+        if (insideSymbolsSection) {
+            let symbol = trimmedLine;
+
+            // Normalize symbols for comparison.
+            if (isELF && trimmedLine.match(/^\d+\.\s*([^\s:]+):/)) {
+                symbol = trimmedLine.match(/^\d+\.\s*([^\s:]+):/)[1];
+                symbol = normalizeSymbol(symbol);
+                console.log("Found Linux symbol:", symbol);
+            }
+
+            // For Windows, take the entire line as the symbol (e.g., "CreateFileW").
+            if (isPE && trimmedLine.match(/^\d+\.\s*([^\s]+)$/)) {
+                symbol = trimmedLine.match(/^\d+\.\s*([^\s]+)$/)[1];
+                symbol = normalizeSymbol(symbol);
+                console.log("Found Windows symbol:", symbol);
+            }
+
+            // Convert the symbol to lowercase for case-insensitive matching.
+            const lowerSymbol = symbol.toLowerCase();
+
+            // Perform case-insensitive, partial matching.
+            function findMatchingDescription(jsonData) {
+                for (let key in jsonData) {
+                    if (lowerSymbol.includes(key.toLowerCase())) {
+                        return jsonData[key];
+                    }
+                }
+                return null;
+            }
+
+            // Check for matches in JSON files.
+            let description = '';
+            if (isPE) {
+                description = findMatchingDescription(winapiCalls);
+            } else if (isELF) {
+                description = findMatchingDescription(linuxSyscalls);
+            }
+
+            // Add the symbol to the table with or without the description
+            tableRows.push(`<tr><td>${symbol}</td><td>${description || 'N/A'}</td></tr>`);
+        }
+    });
+
+    // Append the table with all symbols.
+    if (tableRows.length > 0) {
+        console.log("Symbols found. Adding table...");
+        result += `<div><button id="toggleButton" onclick="toggleTable('symbolTable')">Toggle Symbols Details</button></div>`;
+        result += `<table id="symbolTable" style="display:none;"><thead><tr><th>Symbol</th><th>Description</th></tr></thead><tbody>`;
+        result += tableRows.join('');
+        result += `</tbody></table>`;
+    }
+
+    return result;
+}
+
+// Toogle for the table at the bottom of the page.
+function toggleTable(tableId) {
+    const table = document.getElementById(tableId);
+    if (table) {
+        table.style.display = table.style.display === 'none' ? 'table' : 'none';
+    }
+}
+    
+        document.getElementById('fileInput').addEventListener('change', function() {
+
+            const file = this.files[0];
+
+            if (file) {
+
+                const reader = new FileReader();
+
+                reader.onload = function(event) {
+
+		            // Displays some basic data about the file and when it was analyzed.
+                    fileData = new Uint8Array(event.target.result);
+                    document.getElementById('fileName').textContent = file.name;
+                    document.getElementById('fileSize').textContent = formatBytes(file.size);
+                    document.getElementById('submissionDate').textContent = new Date().toLocaleString();
+                };
+
+                reader.readAsArrayBuffer(file);
+
+            }
+
+        });
+    
+        document.getElementById('submitBtn').addEventListener('click', function () {
+   
+    if (fileData) {
+   
+        // Hide submit and file input buttons after submit.
+        document.getElementById('submitBtn').style.display = 'none';
+        document.getElementById('fileInputContainer').style.display = 'none';
+
+        // Show loading message.
+        document.getElementById('loadingMessage').style.display = 'block';
+
+        // Start YARA scan and Wasm analysis.
+        fetch('/scan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/octet-stream',
+            },
+            body: fileData,
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("YARA scan failed with status: " + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            document.getElementById('loadingMessage').style.display = 'none';
+            const fileOutput = document.getElementById('fileOutput');
+            fileOutput.innerHTML = '';
+
+            // Display YARA scan results.
+            if (data.matches && data.matches.length > 0) {
+                data.matches.forEach(match => {
+                    let output = `<div><strong>YARA Match:</strong> Rule: ${match.rule} in Namespace: ${match.namespace}</div>`;
+
+                    if (match.meta) {
+                        output += `<div><strong>Metadata:</strong><br />`;
+                        for (const [key, value] of Object.entries(match.meta)) {
+                            output += `${key}: ${value}<br />`;
+                        }
+                        output += `</div>`;
+                    }
+
+                    if (match.strings && match.strings.length > 0) {
+                        output += `<div><strong>Matched Strings:</strong><br />`;
+                        match.strings.forEach(str => {
+                            output += `Name: ${str.name}, Value: ${str.value}<br />`;
+                        });
+                        output += `</div>`;
+                    }
+
+                    fileOutput.innerHTML += output + `<br />`;
+                });
+            } else {
+                fileOutput.innerText = "No YARA matches found.";
+            }
+
+            // Run Wasm analysis.
+            if (wasmInitialized) {
+                const verbose = false;
+                let wasmOutput = window.analyzePE(fileData, verbose);
+                wasmOutput = checkForMaliciousSymbols(wasmOutput);
+                fileOutput.innerHTML += `<br />${wasmOutput}`;
+            } else {
+                console.error("Wasm is not initialized. Cannot run Wasm analysis.");
+            }
+
+            // Show the "Test Another File" button after processing.
+            document.getElementById('testAnotherBtn').style.display = 'inline-block';
+
+        })
+        .catch(error => {
+            console.error('Error during YARA scan:', error);
+            document.getElementById('fileOutput').innerText = "Error scanning the file.";
+        });
+    } else {
+        document.getElementById('fileOutput').innerText = "Please upload a file before submitting.";
+    }
+});
+
+// "Test Another File" button reloads the page.
+document.getElementById('testAnotherBtn').addEventListener('click', function () {
+    window.location.reload();
+});
+
+        // Reads the JSON file.
+        loadMaliciousCalls();
+
+</script>
+
+</body>
+</html>
+
