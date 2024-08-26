@@ -46,8 +46,10 @@ Initial json from: https://gist.github.com/404NetworkError/a81591849f5b6b5fe09f5
 
 Lots more work to do such as prettier formatting. I'm not good at that so I used ChatGPT to create that Javascript and HTML/CSS front end functionality.  I don't do a lot of front-end work enough to learn JS in-depth.
 
-![Shows the browmal report and tooltip popup for CreateProcessW](/assets/sample.png?raw=true "Shows the browmal report and tooltip popup for CreateProcessW")
+![Shows an ELF file scan report.](/assets/elf.png?raw=true "Shows an ELF file scan report.")
 
+
+![Shows Toggle on with symbols on the left and the description of it on the right..](/assets/elf.png?raw=true "Shows a Toggle on with symbols on the left and the description of it on the right.")
 
 ## Setup
 
@@ -102,28 +104,32 @@ go build srv.go
 
 The findings were expected because of how MD5 and SHA1 are used to parse the headers.
 ```
-main.go
+
+    no-yara-scan/srv.go
+    ❯❱ go.lang.security.audit.net.use-tls.use-tls
+          Found an HTTP server without TLS. Use 'http.ListenAndServeTLS' instead. See
+          https://golang.org/pkg/net/http/#ListenAndServeTLS for more information.   
+          Details: https://sg.run/dKbY                                               
+                                                                                     
+    wasm/pes/pes.go
     ❯❱ go.lang.security.audit.crypto.use_of_weak_crypto.use-of-md5
           Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is
           therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.               
           Details: https://sg.run/2xB5                                                                   
                                                                                                          
-           52┆ md5_h := md5.Sum(fileBytes)
+           23┆ md5_h := md5.Sum(fileBytes)
    
     ❯❱ go.lang.security.audit.crypto.use_of_weak_crypto.use-of-sha1
           Detected SHA1 hash algorithm which is considered insecure. SHA1 is not collision resistant and is
           therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.                 
           Details: https://sg.run/XBYA                                                                     
                                                                                                            
-           53┆ sha1_h := sha1.Sum(fileBytes)
-                                   
-    websrv/websrv.go
+           24┆ sha1_h := sha1.Sum(fileBytes)
+                                            
+    with-yara-scan/srv/srv.go
     ❯❱ go.lang.security.audit.net.use-tls.use-tls
           Found an HTTP server without TLS. Use 'http.ListenAndServeTLS' instead. See
           https://golang.org/pkg/net/http/#ListenAndServeTLS for more information.   
           Details: https://sg.run/dKbY                                               
                                                                                      
-           ▶▶┆ Autofix ▶ http.ListenAndServeTLS(addr, certFile, keyFile, nil)
-           56┆ log.Fatal(http.ListenAndServe(addr, nil))
-
 ```
