@@ -20,11 +20,14 @@ However, this provides a good starting point to analyze a pe file.
 package main
 
 import (
+	"browmal/elfs"
+	"browmal/officedoc"
+	"browmal/pes"
 	"bytes"
 	"fmt"
-	"goPEy/elfs"
-	"goPEy/pes"
 	"syscall/js"
+
+	"github.com/gabriel-vasile/mimetype"
 
 	"github.com/Binject/debug/pe"
 	"github.com/yalue/elf_reader"
@@ -58,6 +61,28 @@ func checkElffile(fileBytes []byte) (elf_reader.ELFFile, error) {
 	return elf_reader.ParseELFFile(fileBytes)
 }
 
+func checkOfficeDocumentType(fileBytes []byte) bool {
+
+	result := false
+
+	// Detect MIME type from the file data.
+	mtype := mimetype.Detect(fileBytes)
+
+	// Check for specific Office document types.
+	if mtype.Is("application/vnd.openxmlformats-officedocument.wordprocessingml.document") || mtype.Is("application/msword") || mtype.Is("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") || mtype.Is("application/vnd.ms-excel") || mtype.Is("application/vnd.openxmlformats-officedocument.presentationml.presentation") || mtype.Is("application/vnd.ms-powerpoint") {
+
+		result = true
+
+	} else {
+
+		result = false
+
+	}
+
+	return result
+
+}
+
 func analyzeWrapper(this js.Value, args []js.Value) any {
 
 	fileBytes := make([]byte, args[0].Get("length").Int())
@@ -67,6 +92,7 @@ func analyzeWrapper(this js.Value, args []js.Value) any {
 
 	isPe, pe_file := checkPefile(fileBytes)
 	elf, isElf := checkElffile(fileBytes)
+	isOffice := checkOfficeDocumentType(fileBytes)
 
 	// Check if the file is a PE file and if not, then check if it's an ELF file before continuing using the functions.
 	if isElf == nil {
@@ -80,10 +106,15 @@ func analyzeWrapper(this js.Value, args []js.Value) any {
 
 		return js.ValueOf(pes.AnalyzeWrapper(this, args, fileBytes, pe_file))
 
+	} else if isOffice {
+
+		result += fmt.Sprintf("[+] Office document detected.\n\n")
+		return js.ValueOf(officedoc.AnalyzeWrapper(this, args, fileBytes))
 	} else {
 
 		result += fmt.Sprintf("[+] Unknown file type.\n\n")
 		return result
+
 	}
 
 }

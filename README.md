@@ -20,6 +20,7 @@ However, as I am thinking about improving on `browmal` I think about junior anal
 ## TODO
 
 - [X] Yara Scanning (Currently Linux only). (The server takes a few seconds to start as it compiles the rules)
+- [X] Extract Macros from Office Documents - https://github.com/unixfreak0037/officeparser
 - [ ] Yara Scanning - compiling rules on windows.
 - [ ] Add a flag to download new Yara Forge rulesets or a button in the browser
 - [ ] Page to create/edit Yara rules?
@@ -31,6 +32,10 @@ However, as I am thinking about improving on `browmal` I think about junior anal
 
 ## Updates
 
+### 20240827
+The `no-server-required` folder contains an `index.html` file and `wasm_exec.js` file that doesn't require a web server and it doesn't have Yara scanning. The WASM application is embedded as a base64 variable. CORS blocks access to loading the local `winapi.json` and `linuxsyscalls.json` files so those are also embedded.
+
+### 20240826
 The Symbols table contains information about the various Win32 API calls and Linux syscalls and appears at the bottom of the results page. The Linux syscalls documentation comes from the https://www.man7.org/ man pages website (ongoing integration). The Windows API calls comes from the https://github.com/reverseame/winapi-categories?tab=readme-ov-file Windows API and Syscalls categories Project which contains a JSON file of the Win32 API. Those can help understand the behavior of the file.
 
 The Yara rules are the full set from the Yara Forge site. It is the best repository of Yara rules available. You can add your own rules in the `rules` directory, as well. You can add individual files or one file with multiple rules, just be sure the file has a `.yara` or `.yar` extension.
@@ -46,10 +51,14 @@ Initial json from: https://gist.github.com/404NetworkError/a81591849f5b6b5fe09f5
 
 Lots more work to do such as prettier formatting. I'm not good at that so I used ChatGPT to create that Javascript and HTML/CSS front end functionality.  I don't do a lot of front-end work enough to learn JS in-depth.
 
+### Elf Report
 ![Shows an ELF file scan report.](/assets/elf.png?raw=true "Shows an ELF file scan report.")
 
-
+###  PE Report
 ![Shows Toggle on with symbols on the left and the description of it on the right..](/assets/symbols.png?raw=true "Shows a Toggle on with symbols on the left and the description of it on the right.")
+
+### Macro Extracted
+![Shows the macro code that was extracted.](/assets/macro.png?raw=true "Shows the macro code that was extracted.")
 
 ## Setup
 

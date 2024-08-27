@@ -1,0 +1,47 @@
+no-server-required/src/pes/pes.go
+    ❯❱ go.lang.security.audit.crypto.use_of_weak_crypto.use-of-md5
+          Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is
+          therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.               
+          Details: https://sg.run/2xB5                                                                   
+                                                                                                         
+           23┆ md5_h := md5.Sum(fileBytes)
+   
+    ❯❱ go.lang.security.audit.crypto.use_of_weak_crypto.use-of-sha1
+          Detected SHA1 hash algorithm which is considered insecure. SHA1 is not collision resistant and is
+          therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.                 
+          Details: https://sg.run/XBYA                                                                     
+                                                                                                           
+           24┆ sha1_h := sha1.Sum(fileBytes)
+                                      
+    no-yara-scan/srv.go
+    ❯❱ go.lang.security.audit.net.use-tls.use-tls
+          Found an HTTP server without TLS. Use 'http.ListenAndServeTLS' instead. See
+          https://golang.org/pkg/net/http/#ListenAndServeTLS for more information.   
+          Details: https://sg.run/dKbY                                               
+                                                                                     
+           ▶▶┆ Autofix ▶ http.ListenAndServeTLS(addr, certFile, keyFile, nil)
+           56┆ log.Fatal(http.ListenAndServe(addr, nil))
+                                  
+    wasm/pes/pes.go
+    ❯❱ go.lang.security.audit.crypto.use_of_weak_crypto.use-of-md5
+          Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is
+          therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.               
+          Details: https://sg.run/2xB5                                                                   
+                                                                                                         
+           23┆ md5_h := md5.Sum(fileBytes)
+   
+    ❯❱ go.lang.security.audit.crypto.use_of_weak_crypto.use-of-sha1
+          Detected SHA1 hash algorithm which is considered insecure. SHA1 is not collision resistant and is
+          therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.                 
+          Details: https://sg.run/XBYA                                                                     
+                                                                                                           
+           24┆ sha1_h := sha1.Sum(fileBytes)
+                                            
+    with-yara-scan/srv/srv.go
+    ❯❱ go.lang.security.audit.net.use-tls.use-tls
+          Found an HTTP server without TLS. Use 'http.ListenAndServeTLS' instead. See
+          https://golang.org/pkg/net/http/#ListenAndServeTLS for more information.   
+          Details: https://sg.run/dKbY                                               
+                                                                                     
+           ▶▶┆ Autofix ▶ http.ListenAndServeTLS(addr, certFile, keyFile, nil)
+          252┆ log.Fatal(http.ListenAndServe(addr, nil))
