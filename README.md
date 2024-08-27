@@ -4,6 +4,8 @@
 
 It is a proof-of-concept for tinkering with learning how to parse PE and ELF files with Go and I used the tutorial from https://d3ext.github.io/posts/malware-analysis-1/ to learn to create a parser with Go. I used the elf_view sample code from https://github.com/yalue/elf_reader/tree/master/elf_view for the Elf parser.
 
+## Scanned with SemGrep - https://semgrep.dev
+
 ## Use cases:
 
 - You want to start learning reverse engineering.
@@ -108,37 +110,3 @@ cd with-yara-scan
 go mod init browmal
 go mod tidy
 go build srv.go
-```
-## Scanned with SemGrep - https://semgrep.dev
-
-The findings were expected because of how MD5 and SHA1 are used to parse the headers.
-```
-
-    no-yara-scan/srv.go
-    ❯❱ go.lang.security.audit.net.use-tls.use-tls
-          Found an HTTP server without TLS. Use 'http.ListenAndServeTLS' instead. See
-          https://golang.org/pkg/net/http/#ListenAndServeTLS for more information.   
-          Details: https://sg.run/dKbY                                               
-                                                                                     
-    wasm/pes/pes.go
-    ❯❱ go.lang.security.audit.crypto.use_of_weak_crypto.use-of-md5
-          Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is
-          therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.               
-          Details: https://sg.run/2xB5                                                                   
-                                                                                                         
-           23┆ md5_h := md5.Sum(fileBytes)
-   
-    ❯❱ go.lang.security.audit.crypto.use_of_weak_crypto.use-of-sha1
-          Detected SHA1 hash algorithm which is considered insecure. SHA1 is not collision resistant and is
-          therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.                 
-          Details: https://sg.run/XBYA                                                                     
-                                                                                                           
-           24┆ sha1_h := sha1.Sum(fileBytes)
-                                            
-    with-yara-scan/srv/srv.go
-    ❯❱ go.lang.security.audit.net.use-tls.use-tls
-          Found an HTTP server without TLS. Use 'http.ListenAndServeTLS' instead. See
-          https://golang.org/pkg/net/http/#ListenAndServeTLS for more information.   
-          Details: https://sg.run/dKbY                                               
-                                                                                     
-```
